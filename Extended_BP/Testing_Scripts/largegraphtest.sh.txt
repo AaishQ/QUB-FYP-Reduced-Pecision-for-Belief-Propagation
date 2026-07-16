@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Author: AaishahQ
+
 mkdir -p largergraphtest
 
 THRESH=0.01
