@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Author: AaishahQ
+
 mkdir -p memory_results
 RESULT_FILE="memory_results/final_memory.csv"
 echo "Algorithm,Precision,Memory_KB" > $RESULT_FILE
