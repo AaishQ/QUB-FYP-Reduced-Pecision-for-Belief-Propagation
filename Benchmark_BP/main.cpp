@@ -17,7 +17,7 @@
 int main(int argc, char* argv[]) {
 
     // Parse inputs.
-    if (argc < 4) { // Author 40339022: I've changed the argument to 4 minimum
+    if (argc < 4) { // Author AaishahQ: I've changed the argument to 4 minimum
         std::cout << "Usage:\n   ./main.out <graph filename> <timeout> [...runtime params]\n   Threshold values to test: 0.5, 0.1, 0.01, 0.001, 0.0001\n Graph filename should be a txt file containing the graph parameters. Runtime parameters should be integer to parameterize the run." << std::endl;
         return -1;
     }
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
         runtime_params.push_back(std::stoi(argv[argc_iter]));
     }
 
-    // Author 40339022: Returning the testing output
+    // Author AaishahQ: Returning the testing output
     std::cout << "Convergence Threshold Test" << std::endl;
     std::cout << "Graph: " << filename << std::endl;
     std::cout << "Timeout: " << timeout << "s" << std::endl;
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     // Debug - output graph representation.
     // test_pgm->print();
 
-     // Author 40339022: Memory measurement before inference
+     // Author AaishahQ: Memory measurement before inference
     long mem_before = 0;
     std::ifstream statm("/proc/self/statm");
     if (statm.is_open()) {
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     // Run inference on graph.
     std::tuple<float, std::vector<double>, int, std::vector<std::pair<int, int>>, std::vector<std::pair<float, int>>> results = infer(test_pgm, threshold, timeout, runtime_params, false);  // CHANGED: verbose = false
 
-    // Author 40339022:Memory measurement after inference
+    // Author AaishahQ:Memory measurement after inference
     long mem_after = 0;
     std::ifstream statm2("/proc/self/statm");
     if (statm2.is_open()) {
