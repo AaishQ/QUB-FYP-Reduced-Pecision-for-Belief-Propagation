@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Author: AaishahQ
+
+mkdir -p optimalconvergenceresults
+
+graphs="ising_3_0.txt ising_20_0.txt ising_50_0.txt ising_100_0.txt  ising_150_0.txt ising_200_0.txt ising_250_0.txt ising_300_0.txt ising_350_0.txt ising_400_0.txt ising_450_0.txt ising_500_0.txt"
+thresholds="0.5 0.1 0.05 0.01 0.005 0.001 0.0005 0.0001"
+algorithms="loopy ve rbp rnbp"
+
+echo "Algorithm,Graph,Threshold,Time_ms,Iterations,Converged" > optimalconvergenceresults/all.csv
+
+
+for algo in $algorithms; do
+    echo ""
+    echo "Running $algo"
+    
+    make -f Makefile.serial INFER=$algo SRC=main.cpp clean
+    make -f Makefile.serial INFER=$algo SRC=main.cpp
+    
+    for graph in $graphs; do
+        echo "  $graph"
+        
+        if echo $graph | grep -q "3"; then
+            timeout=10
+        elif echo $graph | grep -q "20"; then
+            timeout=30
+        elif echo $graph | grep -q "50"; then
+            timeout=60
+        elif echo $graph | grep -q "100"; then
+            timeout=120
+        elif echo $graph | grep -q "200"; then
+            timeout=240
+        elif echo $graph | grep -q "300"; then
+            timeout=360
+        elif echo $graph | grep -q "400"; then
+            timeout=480
+        else
+            timeout=600
+        fi
+        
+        for thresh in $thresholds; do
+            echo "    epsilon=$thresh"
+            
+            if [ "$algo" = "rnbp" ]; then
+                ./main.out $graph $timeout $thresh 3 8 > optimalconvergenceresults/${algo}_${graph}_${thresh}.log 2>&1
+            else
+                ./main.out $graph $timeout $thresh > optimalconvergenceresults/${algo}_${graph}_${thresh}.log 2>&1
+            fi
+            
+            if grep -q "Runtime:" optimalconvergenceresults/${algo}_${graph}_${thresh}.log; then
+                time_ms=$(grep "Runtime:" optimalconvergenceresults/${algo}_${graph}_${thresh}.log | awk '{print $2}')
+                iterations=$(grep "Iterations:" optimalconvergenceresults/${algo}_${graph}_${thresh}.log | awk '{print $2}')
+                echo "$algo,$graph,$thresh,$time_ms,$iterations,YES" >> optimalconvergenceresults/all.csv
+            else
+                echo "$algo,$graph,$thresh,0,0,NO" >> optimalconvergenceresults/all.csv
+            fi
+        done
+    done
+done
+
+echo ""
+echo "Done. Results available in optimalconvergenceresults/all.csv"
