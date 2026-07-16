@@ -1,0 +1,61 @@
+# Makefile for GPU BP code - based on Makefile shown here: https://gist.github.com/yzhwang/5120437
+
+CC			=	nvcc
+NVCC			=	nvcc
+LD			=	nvcc
+
+EXE			:= 	${SRC:.cpp=.out}
+CU_SRCS			:= 	pgm.cpp graph.cpp infer_data.cu inference_helpers.cu Tests/test_helpers.cpp Tests/time_tests_helpers.cpp $(SRC)
+CU_OBJS			:=	pgm.o graph.o infer_data.o inference_helpers.o Tests/test_helpers.o Tests/time_tests_helpers.o ${SRC:.cpp=.o}
+
+ifeq ($(INFER), loopy)
+CU_SRCS			+= 	loopy_belief_propagation.cu
+CU_OBJS			+=	loopy_belief_propagation.o
+endif
+ifeq ($(INFER), rbp)
+CU_SRCS			+=	residual_belief_propagation.cu
+CU_OBJS			+=	residual_belief_propagation.o
+endif
+ifeq ($(INFER), rs)
+CU_SRCS			+= 	residual_splash.cu
+CU_OBJS 		+= 	residual_splash.o
+endif
+ifeq ($(INFER), rnbp)
+CU_SRCS			+= 	random_belief_propagation.cu
+CU_OBJS 		+=	random_belief_propagation.o
+endif
+
+OBJS			:=	$(CU_OBJS)
+
+# include directories
+INC_DIRS	:=	$(CUDA_INC) \
+                        $(CUB_HOME) \
+			$(BOOST_INC)
+
+# library directories
+LIB_DIRS	:=	$(CUDA_LIB) \
+			$(BOOST_LIB)
+
+# libraries
+LIBS		:=	
+
+CCFLAGS		+=	-std=c++11 -dc -g -G $(foreach includedir, $(INC_DIRS), -I $(includedir))
+LDFLAGS         +=      -lcurand -lboost_system -lboost_filesystem -g -G $(foreach includedir, $(INC_DIRS), -I $(includedir))
+LDFLAGS		+=	$(foreach librarydir, $(LIB_DIRS), -L $(librarydir))
+LDFLAGS		+=	$(foreach library, $(LIBS), -l$(library))
+
+.PHONY:		all clean distclean
+
+$(EXE): $(OBJS)
+	$(LD) $(OBJS) $(LDFLAGS) -o $(EXE)
+
+.cpp.o:
+	$(CC) $(CCFLAGS) -c $< -o $@
+
+%.o : %.cu
+	$(NVCC) $(CCFLAGS) -c $< -o $@
+
+clean:
+	rm -vf $(EXE) $(OBJS)
+	rm *.out *.o
+	
