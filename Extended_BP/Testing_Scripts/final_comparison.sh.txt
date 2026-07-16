@@ -1,0 +1,146 @@
+#!/bin/bash
+
+# Author: AaishahQ
+# Master comparison script for BP algorithms
+# Compares all algorithms against Variable Elimination baseline
+# Tests double, single, 16-bit reduced, and 8-bit further reduced precision
+
+mkdir -p final_comparison
+
+
+echo "BP ALGORITHM COMPARISON - FINAL RESULTS"
+
+# Results file
+RESULTS="final_comparison/all_results.csv"
+echo "Algorithm,Precision,Graph,Time_ms,Iterations,Converged" > $RESULTS
+
+# Graph to test 
+GRAPH="ising_3_0.txt"
+TIMEOUT=300
+THRESH=0.01
+
+
+run_and_record() {
+    local name=$1
+    local cmd=$2
+    local graph=$3
+    local prec=$4
+    
+    echo "  Running $name ($prec) on $graph..."
+    
+    $cmd $graph $TIMEOUT $THRESH > final_comparison/${name}_${prec}.log 2>&1
+    
+    if grep -q "Time:" final_comparison/${name}_${prec}.log; then
+        TIME=$(grep "Time:" final_comparison/${name}_${prec}.log | head -1 | awk '{print $2}')
+        ITER=$(grep "Iterations:" final_comparison/${name}_${prec}.log | head -1 | awk '{print $2}')
+        echo "$name,$prec,$graph,$TIME,$ITER,YES" >> $RESULTS
+        echo "    OK - Time: ${TIME}ms, Iterations: ${ITER}"
+    else
+        echo "$name,$prec,$graph,0,0,NO" >> $RESULTS
+        echo "    FAILED"
+    fi
+}
+
+
+# 1. VARIABLE ELIMINATION (BASELINE)
+
+
+# 1. VARIABLE ELIMINATION (BASELINE) - needs dummy threshold
+
+echo "BASELINE: Variable Elimination"
+make -f Makefile.serial INFER=ve SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=ve SRC=main.cpp > /dev/null 2>&1
+mv main.out ve_bp 2>/dev/null
+
+# VE needs a dummy threshold value (0.01 will be used here by me)
+./ve_bp $GRAPH $TIMEOUT 0.01 > final_comparison/VE_double.log 2>&1
+
+if grep -q "Runtime:" final_comparison/VE_double.log; then
+    TIME=$(grep "Runtime:" final_comparison/VE_double.log | head -1 | awk '{print $2}')
+    ITER=$(grep "Iterations:" final_comparison/VE_double.log | head -1 | awk '{print $2}')
+    echo "VE,double,$GRAPH,$TIME,$ITER,YES" >> $RESULTS
+    echo "    OK - Time: ${TIME}ms, Iterations: ${ITER}"
+else
+    echo "VE,double,$GRAPH,0,0,NO" >> $RESULTS
+    echo "    FAILED"
+    cat final_comparison/VE_double.log | tail -5
+fi
+
+
+# 2. LOOPY BP - ALL PRECISIONS
+
+
+echo "LOOPY BELIEF PROPAGATION"
+
+# Double precision
+make -f Makefile.serial INFER=loopy SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=loopy SRC=main.cpp > /dev/null 2>&1
+mv main.out loopy_double 2>/dev/null
+run_and_record "Loopy" "./loopy_double" $GRAPH "double"
+
+# Single precision
+make -f Makefile.serial INFER=single SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=single SRC=main.cpp > /dev/null 2>&1
+mv main.out loopy_single 2>/dev/null
+run_and_record "Loopy" "./loopy_single" $GRAPH "single"
+
+# Reduced precision (16-bit)
+make -f Makefile.serial INFER=redprec SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=redprec SRC=main.cpp > /dev/null 2>&1
+mv main.out loopy_redprec 2>/dev/null
+run_and_record "Loopy" "./loopy_redprec" $GRAPH "redprec"
+
+# Further reduced precision (8-bit)
+make -f Makefile.serial INFER=furedprec SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=furedprec SRC=main.cpp > /dev/null 2>&1
+mv main.out loopy_furedprec 2>/dev/null
+run_and_record "Loopy" "./loopy_furedprec" $GRAPH "furedprec"
+
+
+# 3. RESIDUAL BP - ALL PRECISIONS
+
+
+echo " RESIDUAL BELIEF PROPAGATION "
+
+# Double precision
+make -f Makefile.serial INFER=rbp SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=rbp SRC=main.cpp > /dev/null 2>&1
+mv main.out rbp_double 2>/dev/null
+run_and_record "Residual" "./rbp_double" $GRAPH "double"
+
+# Single precision 
+if [ -f "single_precision.cpp" ]; then
+    echo "  Single precision not implemented for Residual - skipping"
+else
+    echo "  Single precision not available for Residual"
+fi
+
+# Reduced precision (16-bit) - need to create separate file
+echo "  Reduced precision not implemented for Residual - skipping"
+
+# Further reduced precision (8-bit)
+echo "  Further reduced precision not implemented for Residual - skipping"
+
+
+# 4. RANDOM BP - ALL PRECISIONS
+
+
+echo "RANDOM BELIEF PROPAGATION "
+
+# Double precision
+make -f Makefile.serial INFER=rnbp SRC=main.cpp clean > /dev/null 2>&1
+make -f Makefile.serial INFER=rnbp SRC=main.cpp > /dev/null 2>&1
+mv main.out rnbp_double 2>/dev/null
+run_and_record "Random" "./rnbp_double" $GRAPH "double"
+
+# Further reduced precision (8-bit)
+echo "  Further reduced precision not implemented for Random - skipping"
+
+
+echo "RESULTS SUMMARY"
+
+column -t -s, $RESULTS
+
+echo ""
+echo "Full results saved to: $RESULTS"
+echo "Individual logs saved to: final_comparison/"
