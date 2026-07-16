@@ -26,24 +26,37 @@ Use the provided Makefile.serial with the INFER flag to select the desired algor
 BASH:
 
 **Loopy BP double precision:**
+
 make -f Makefile.serial INFER=loopy SRC=main.cpp
 mv main.out loopy_double
+
 **Single precision (Loopy BP):**
+
 make -f Makefile.serial INFER=single SRC=main.cpp
 mv main.out loopy_single
+
 **SDF16‑bit Reduced (Loopy BP):**
+
 make -f Makefile.serial INFER=redprec SRC=main.cpp
 mv main.out loopy_redprec
+
 **SDF8‑bit Further Reduced (Loopy BP):**
+
 make -f Makefile.serial INFER=furedprec SRC=main.cpp
 mv main.out loopy_furedprec
+
 **Residual BP (double):**
+
 make -f Makefile.serial INFER=rbp SRC=main.cpp
 mv main.out rbp_double
+
 **Random BP (double):**
+
 make -f Makefile.serial INFER=rnbp SRC=main.cpp
 mv main.out rnbp_double
+
 **Variable Elimination:**
+
 make -f Makefile.serial INFER=ve SRC=main.cpp
 mv main.out ve_bp
 clean with: make -f Makefile.serial clean
