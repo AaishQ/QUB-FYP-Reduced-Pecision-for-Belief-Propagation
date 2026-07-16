@@ -1,0 +1,88 @@
+#!/bin/bash
+
+mkdir -p memory_results
+RESULT_FILE="memory_results/final_memory.csv"
+echo "Algorithm,Precision,Memory_KB" > $RESULT_FILE
+
+GRAPH="ising_3_0.txt"
+TIMEOUT=10
+THRESH=0.01
+
+# Function to get max memory usage of a command
+get_memory() {
+    local cmd="$1"
+    
+    # Run in background
+    eval $cmd &
+    local pid=$!
+    
+    local max_mem=0
+    
+    # Monitor for up to 5 seconds
+    for i in {1..500}; do
+        if [ -f /proc/$pid/statm ]; then
+            # Get RSS (resident set size) in pages, convert to KB
+            mem=$(awk '{print $2}' /proc/$pid/statm)
+            mem=$((mem * 4))
+            if [ $mem -gt $max_mem ]; then
+                max_mem=$mem
+            fi
+        fi
+        sleep 0.01
+    done
+    
+    kill $pid 2>/dev/null
+    wait $pid 2>/dev/null
+    
+    echo $max_mem
+}
+
+echo "Measuring memory usage..."
+
+# VE
+echo -n "VE... "
+mem=$(get_memory "./ve_bp $GRAPH $TIMEOUT $THRESH")
+echo "VE,double,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+# Loopy double
+echo -n "Loopy double... "
+mem=$(get_memory "./loopy_double $GRAPH $TIMEOUT $THRESH")
+echo "Loopy,double,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+# Loopy single
+echo -n "Loopy single... "
+mem=$(get_memory "./loopy_single $GRAPH $TIMEOUT $THRESH")
+echo "Loopy,single,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+# Loopy redprec (16-bit)
+echo -n "Loopy 16-bit... "
+mem=$(get_memory "./loopy_redprec $GRAPH $TIMEOUT $THRESH")
+echo "Loopy,redprec,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+# Loopy furedprec (8-bit)
+echo -n "Loopy 8-bit... "
+mem=$(get_memory "./loopy_furedprec $GRAPH $TIMEOUT $THRESH")
+echo "Loopy,furedprec,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+# Residual
+echo -n "Residual... "
+mem=$(get_memory "./rbp_double $GRAPH $TIMEOUT $THRESH")
+echo "Residual,double,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+# Random
+echo -n "Random... "
+mem=$(get_memory "./rnbp_double $GRAPH $TIMEOUT $THRESH 3 8")
+echo "Random,double,$mem" >> $RESULT_FILE
+echo "${mem}KB"
+
+echo ""
+
+echo "MEMORY RESULTS"
+
+column -t -s, $RESULT_FILE
