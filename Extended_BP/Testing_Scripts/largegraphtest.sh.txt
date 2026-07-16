@@ -1,0 +1,53 @@
+#!/bin/bash
+
+mkdir -p largergraphtest
+
+THRESH=0.01
+
+GRAPHS="ising_200_0.txt ising_300_0.txt ising_350_0.txt ising_400_0.txt ising_450_0.txt ising_500_0.txt"
+
+echo "Graph,Threshold,Time_ms,Iterations,Converged" > largergraphtest/scaling_data.csv
+
+for graph in $GRAPHS; do
+    echo ""
+    echo "Testing: $graph at epsilon=$THRESH"
+    echo "Started: $(date)"
+    
+
+    if [ "$graph" = "ising_200_0.txt" ]; then
+        timeout=360
+    elif [ "$graph" = "ising_300_0.txt" ]; then
+        timeout=720
+    elif [ "$graph" = "ising_350_0.txt" ]; then
+        timeout=900
+    elif [ "$graph" = "ising_400_0.txt" ]; then
+        timeout=1080
+    elif [ "$graph" = "ising_450_0.txt" ]; then
+        timeout=1440
+    else
+        timeout=1800
+    fi
+    
+    echo "Timeout: ${timeout} seconds (approx $((timeout/60)) minutes)"
+    
+    ./main.out $graph $timeout $THRESH > largergraphtest/${graph}_log.txt 2>&1
+    
+    if grep -q "Runtime:" largergraphtest/${graph}_log.txt; then
+        # FIXED: Changed from final_results to largergraphtest
+        TIME=$(grep "Runtime:" largergraphtest/${graph}_log.txt | awk '{print $2}')
+        ITER=$(grep "Iterations:" largergraphtest/${graph}_log.txt | awk '{print $2}')
+        echo "$graph,$THRESH,$TIME,$ITER,YES" >> largergraphtest/scaling_data.csv
+        echo "SUCCESS: Time = ${TIME}ms, Iterations = ${ITER}"
+    else
+        echo "$graph,$THRESH,0,0,NO" >> largergraphtest/scaling_data.csv
+        echo "FAILED: Check largergraphtest/${graph}_log.txt"
+        cat largergraphtest/${graph}_log.txt | tail -5
+    fi
+    
+    echo "Finished: $(date)"
+    echo ""
+done
+
+
+echo "RESULTS SUMMARY:"
+cat largergraphtest/scaling_data.csv
