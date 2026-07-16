@@ -1,6 +1,7 @@
 # Reduced-Precision Belief Propagation for Embedded Systems on a PYNQ-Z2 Board
 
 **Description:**
+
 The following project evaluates reduced and further reduced precision on an ARM based PYNQ-Z2 Board.
 
 Four base algorithms are tested; with Benchmark Belief Propagation algorithms taken from https://github.com/mvandermerwe/BP-GPU-Message-Scheduling
@@ -21,6 +22,7 @@ This work explores optimal convergence thresholds, speed‑ups, memory savings, 
 -Libraries: Boost (fibonacci heap for Residual BP), standard C++ libraries
 
 **Building Executables:**
+
 Use the provided Makefile.serial with the INFER flag to select the desired algorithm:
 
 BASH:
@@ -91,15 +93,21 @@ The repository includes bash scripts to run large experiment batches:
 
 
 To make scripts executable, run:
+
 chmod +x scripts/*.sh
 ./scripts/final_comparison.sh
 
 **Memory Measurement:**
+
 Memory is measured by reading the process’s resident set size (RSS) from /proc/self/statm.
 The value is multiplied by the ARM page size (4 KB) and printed as Memory: X KB after inference.
 
 **Citation:**
+
 If you use the following code or results, please cite:
+
 [1] A. Qasim, “Reduced-Precision Belief Propagation for Embedded Systems on PYNQ‑Z2 Board”, CSC3002 Dissertation, Queen’s University Belfast, 2026.
+
 [2] M. Van der Merwe, “BP‑GPU‑Message‑Scheduling”, GitHub, 2019.
+
 [3] A. S. Molahosseini, J. Lee, H. Vandierendonck, “Software‑Defined Number Formats for High‑Speed Belief Propagation”, IEEE TETC, vol. 13, no. 3, pp. 853‑865, 2025.
